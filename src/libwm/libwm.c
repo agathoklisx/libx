@@ -367,7 +367,13 @@ private void wm_input_window (wm_T *this, char *header, Input_cb cb) {
   values.line_width = 4;
   values.line_style = LineSolid;
 
-  GC gc = XCreateGC ($my(dpy), root, GCBackground|GCForeground|GCLineWidth|GCLineStyle, &values);
+  GC gc;
+  if ($my(font)->fontset)
+    gc = XCreateGC ($my(dpy), root, GCBackground|GCForeground|GCLineWidth|GCLineStyle, &values);
+  else {
+    values.font = $my(font)->font->fid;
+    gc = XCreateGC ($my(dpy), root, GCBackground|GCForeground|GCLineWidth|GCLineStyle|GCFont,&values);
+  }
 
   Drawable winbar;
   winbar = XCreatePixmap ($my(dpy), root, width, height, DefaultDepth ($my(dpy), screen));
@@ -401,10 +407,13 @@ private void wm_input_window (wm_T *this, char *header, Input_cb cb) {
     XNextEvent ($my(dpy), &ev);
     switch (ev.type) {
       case Expose:
-        if (header isnot NULL)
-          XmbDrawString ($my(dpy), win, $my(font)->fontset,
-              gc, 1, $my(font)->fh, header, bytelen (header));
-
+        if (header isnot NULL) {
+          if ($my(font)->fontset)
+            XmbDrawString ($my(dpy), win, $my(font)->fontset,
+                 gc, 1, $my(font)->fh, header, bytelen (header));
+          else
+            XDrawString($my(dpy), win, gc, 1, 4, header, bytelen(header));
+        }
         break;
 
       case ClientMessage:

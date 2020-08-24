@@ -18,6 +18,10 @@
 #define OK     0
 #define NOTOK -1
 
+typedef signed int utf8;
+typedef unsigned int uint;
+typedef unsigned char uchar;
+
 typedef void (*AllocErrorHandlerF) (int, size_t, char *, const char *, int);
 
 AllocErrorHandlerF AllocErrorHandler;

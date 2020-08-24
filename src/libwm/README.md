@@ -1,4 +1,4 @@
-This is a library that implements a tiny fullscreen window manager for X windows.
+This is a library that implements a tiny fullscreen window manager for the X window environment.
 
 Usage:
 ```sh
@@ -10,7 +10,7 @@ Usage:
   # lower to the cloned distribution. To change that, use the SYSDIR variable when
   # invoking make, or modify the Makefile. There is no specific install target.
 ```
-```C
+
 This code has been tested and can be compiled with gcc, clang and the tcc C compilers,
 without a warning and while turning the DEBUG flags on.
 
@@ -61,16 +61,51 @@ walk to the top.
 
 Thanks:
 
-To the first original fullscreen manager and the root of all that has been spawned
-this culture, to the legendary ratpoison.
+To the first original fullscreen window manager and the root of all that has been
+spawned this culture, to the legendary ratpoison. It was introduced me to a wide
+world view, and served me for 2 years.
 
-To the most advanced of all window managers, the venerable fvwm[2].
+To the most advanced of all window managers, the venerable fvwm[2]. Its configuration
+schema, allows to suit the personal way to do things. It served me for two years as well.
 
-To the musca and wmii projects, and to all the suckless land.
+To the musca and wmii projects, and to all the suckless land. They introduced simplicity
+and realism in the new programmer minds.
 
-To the dminiwm project.
+To the dminiwm project that allowed to offer me (more than the necessary, and within
+an amazing compact code), to build the first wm in SLang and use it for 6-7 years, iirc. 
 
-To those that has been offered code and any little bit of help in the evolution.
+To those that has been participated with any little bit piece to open source ecosystem
+and to our code evolution.
 
 The license is the same with dminiwm and it is included with the distribution.
-```
+(i wish for a time that the essence of the term, will be the natural way)
+
+Bugs:
+
+The only known is not strictly a bug, but an inconsistency. This happens, when the XCreateFontSet()
+fails to create a fontset. This produced a segfault that got fixed by calling another X11
+function to do the text drawing in the input_window() function. But the appearance of that window
+is now different. Of cource there has to be a way to fix that, through a proper research in
+the documents.
+
+The reality is that there is a personal weakness to scan huge documents and with so many technical terms.
+And in cases, like complicated systems like X, the real difficulty is to understand
+the function relationship and the proper calling sequence, in other words
+to undertand the logic. A failure to do this, it means that you might try
+things sometimes blindly, praying that you got them right. Otherwise it is quite possible
+to give up and to loose the confidence, which is a terrible thing to happen in a human being,
+which desperaingly depends on the self confidence.
+
+I don't claim that i understand all the details of the X window system and part of this code.
+As my main intention was to work mostly with the structures and callbacks events,
+to make it work in C exactly the way i wanted. And it works.
+
+And that is why i really appreciate the dminiwm project.
+
+And for those reasons the documentation is so important, as it is really an art.
+For instance in SLang, John Davis doesn't explain less than it has to, and not more than it
+should be. In eight years working with it, everything it was needed to know, it was there where
+it was expected to be.
+
+I believe that examples is probably the best way to master a system, and in this case
+the main() function and the callbacks of the test utility, might be enough.

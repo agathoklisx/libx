@@ -94,7 +94,7 @@ app-shared: shared-lib
 	@$(RM) $(APPSHARED)
 
 aga: shared-lib
-	$(CC) -x c aga.c $(APPFLAGS) -o $(APPSHARED)
+	$(CC) -x c aga.c $(APPFLAGS) -DTHISDIR='"$(THISDIR)"' -DUSER='"$(USER)"' -o $(APPSHARED)
 	@$(INSTALL) -v $(APPSHARED) $(SYSBINDIR)
 	@$(RM) $(APPSHARED)
 
