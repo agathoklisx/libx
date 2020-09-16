@@ -63,7 +63,7 @@
 #include <errno.h>
 
 #include "c.h"
-#include <libwm.h>
+#include <libxwm.h>
 
 #define DESKNUM       18
 
@@ -78,7 +78,7 @@
 #define PLANG_SHELL   "lua"
 #define TMP_DIR       "/tmp"
 #define HOME_DIR      "/home/" USER
-#define THIS_FILE     THISDIR "/wm.c"
+#define THIS_FILE     THISDIR "/xwm.c"
 
 #define WIN_KEY         (Mod4Mask)
 #define ALT_KEY         (Mod1Mask)
@@ -93,11 +93,11 @@
 #define STR_EQ       0 is strcmp
 #define FOLLOW       1
 
-static wm_T *WM;
+static xwm_T *XWM;
 
-#define Wm WM->self
+#define Xwm XWM->self
 
-NewType (wm,
+NewType (xwm,
   char *backlight_dir;
   size_t backlight_dirlen;
   int max_brightness;
@@ -119,7 +119,7 @@ mutable public void __alloc_error_handler__ (int err, size_t size,
   exit (1);
 }
 
-private int get_passwd_cb (wm_T *this, char *buffer, int num_chars,
+private int get_passwd_cb (xwm_T *this, char *buffer, int num_chars,
                                          int keycode, KeySym keysym) {
   (void) keycode; (void) keysym;
 
@@ -145,7 +145,7 @@ private int get_passwd_cb (wm_T *this, char *buffer, int num_chars,
   return 1;
 }
 
-private void sys_backlight_linux (wm_T *this, wm_t *me, int v) {
+private void sys_backlight_linux (xwm_T *this, xwm_t *me, int v) {
   int value = (me->max_brightness * v) / 100;
 
   ifnot (NULL is this->user_string)
@@ -154,7 +154,7 @@ private void sys_backlight_linux (wm_T *this, wm_t *me, int v) {
   this->user_string = NULL;
   this->user_int = -1;
 
-  Wm.input_window (this, "Passwd:", get_passwd_cb);
+  Xwm.input_window (this, "Passwd:", get_passwd_cb);
   size_t len = bytelen (this->user_string);
   ifnot (len) return;
 
@@ -169,8 +169,8 @@ private void sys_backlight_linux (wm_T *this, wm_t *me, int v) {
   system (com);
 }
 
-private void sys_backlight (wm_T *this, int v) {
-  wm_t *me = (wm_t *) this->user_obj;
+private void sys_backlight (xwm_T *this, int v) {
+  xwm_t *me = (xwm_t *) this->user_obj;
   if (NULL is me->backlight_dir or
       0 is me->backlight_dirlen or
       0 is me->max_brightness)
@@ -180,14 +180,14 @@ private void sys_backlight (wm_T *this, int v) {
     sys_backlight_linux (this, me, v);
 }
 
-private void sys_to_memory_linux (wm_T *this) {
+private void sys_to_memory_linux (xwm_T *this) {
   ifnot (NULL is this->user_string)
     free (this->user_string);
 
   this->user_string = NULL;
   this->user_int = -1;
 
-  Wm.input_window (this, "Passwd:", get_passwd_cb);
+  Xwm.input_window (this, "Passwd:", get_passwd_cb);
   size_t len = bytelen (this->user_string);
   ifnot (len) return;
 
@@ -202,14 +202,14 @@ private void sys_to_memory_linux (wm_T *this) {
   system (com);
 }
 
-private void sys_to_memory (wm_T *this) {
-  wm_t *me = (wm_t *) this->user_obj;
+private void sys_to_memory (xwm_T *this) {
+  xwm_t *me = (xwm_t *) this->user_obj;
   if (STR_EQ ("Linux", me->sysname))
     sys_to_memory_linux (this);
 }
 
-private void on_change_desktop (wm_T *this, int desk_idx) {
-  char **classnames = Wm.get.desk_class_names (this, desk_idx);
+private void on_change_desktop (xwm_T *this, int desk_idx) {
+  char **classnames = Xwm.get.desk_class_names (this, desk_idx);
 
   int idx = 0;
 
@@ -221,7 +221,7 @@ private void on_change_desktop (wm_T *this, int desk_idx) {
     }
 
     char *argv[] = {TERM, "-name", "EDITOR", "-e", EDITOR, THIS_FILE, NULL};
-    Wm.spawn (this, argv);
+    Xwm.spawn (this, argv);
     goto theend;
   }
 
@@ -229,16 +229,16 @@ private void on_change_desktop (wm_T *this, int desk_idx) {
     int num = 0;
     if (NULL isnot classnames) {
       while (classnames[idx])
-        if (STR_EQ (classnames[idx++], "WM_DIR")) {
+        if (STR_EQ (classnames[idx++], "XWM_DIR")) {
           num++;
           if (num is 2) goto theend;
         }
     }
 
-    char *argv[] = {TERM, "-name", "WM_DIR", "-cd", THISDIR, "-e", SHELL, NULL};
-    Wm.spawn (this, argv);
+    char *argv[] = {TERM, "-name", "XWM_DIR", "-cd", THISDIR, "-e", SHELL, NULL};
+    Xwm.spawn (this, argv);
     if (++num < 2)
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
 
     goto theend;
   }
@@ -250,7 +250,7 @@ private void on_change_desktop (wm_T *this, int desk_idx) {
     }
 
     char *argv[] = {TERM, "-name", "PLANG_SHELL", "-e", PLANG_SHELL, NULL};
-    Wm.spawn (this, argv);
+    Xwm.spawn (this, argv);
     goto theend;
   }
 
@@ -261,7 +261,7 @@ private void on_change_desktop (wm_T *this, int desk_idx) {
     }
 
     char *argv[] = {TERM, "-name", "MAIL", "-e", MAILER, MAILER_ARGS, NULL};
-    Wm.spawn (this, argv);
+    Xwm.spawn (this, argv);
     goto theend;
   }
 
@@ -276,9 +276,9 @@ private void on_change_desktop (wm_T *this, int desk_idx) {
     }
 
     char *argv[] = {TERM, "-name", "TMP", "-cd", TMP_DIR, "-e", SHELL, NULL};
-    Wm.spawn (this, argv);
+    Xwm.spawn (this, argv);
     if (++num < 2)
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
 
     goto theend;
   }
@@ -291,13 +291,13 @@ private void on_change_desktop (wm_T *this, int desk_idx) {
 
     char *argv[] = {TERM, "-name", "TXT_BROWSER", "-e", TXT_BROWSER,
        "www.linuxfromscratch.org", NULL};
-    Wm.spawn (this, argv);
+    Xwm.spawn (this, argv);
     goto theend;
   }
 
   if (NULL is classnames) {
     char *argv[] = {TERM, "-cd", HOME_DIR, "-e", SHELL, NULL};
-    Wm.spawn (this, argv);
+    Xwm.spawn (this, argv);
   }
 
 theend:
@@ -307,7 +307,7 @@ theend:
   free (classnames);
 }
 
-private void on_keypress (wm_T *this, int modifier, char *key) {
+private void on_keypress (xwm_T *this, int modifier, char *key) {
   int
     desk_idx,
     cur,
@@ -316,35 +316,35 @@ private void on_keypress (wm_T *this, int modifier, char *key) {
   if (modifier is WIN_KEY) {
     if (STR_EQ ("c", key)) {
       char *argv[] = {TERM, "-e", SHELL, NULL};
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
     } else if (STR_EQ ("Tab", key))
-      Wm.next_win (this);
+      Xwm.next_win (this);
     else if (STR_EQ ("q", key))
-      Wm.prev_win (this);
+      Xwm.prev_win (this);
     else if (STR_EQ ("grave", key)) {
-      int prev = Wm.get.previous_desktop (this);
-      Wm.change_desktop (this, prev);
+      int prev = Xwm.get.previous_desktop (this);
+      Xwm.change_desktop (this, prev);
     } else if (STR_EQ ("Left", key)) {
-      cur = Wm.get.current_desktop (this);
-      num = Wm.get.desknum (this);
+      cur = Xwm.get.current_desktop (this);
+      num = Xwm.get.desknum (this);
       desk_idx = (cur + num - 1) % num;
-      Wm.change_desktop (this, desk_idx);
+      Xwm.change_desktop (this, desk_idx);
     } else if (STR_EQ ("Right", key)) {
-      cur = Wm.get.current_desktop (this);
-      num = Wm.get.desknum (this);
+      cur = Xwm.get.current_desktop (this);
+      num = Xwm.get.desknum (this);
       desk_idx = (cur + num + 1) % num;
-      Wm.change_desktop (this, desk_idx);
+      Xwm.change_desktop (this, desk_idx);
     } else if ('0' <= key[0] and key[0] <= '9') {
       desk_idx = key[0] - '0';
-      Wm.change_desktop (this, desk_idx);
+      Xwm.change_desktop (this, desk_idx);
       on_change_desktop (this, desk_idx);
     } else if ('F' is key[0] and ('1' <= key[1] and key[1] <= '8')) {
       desk_idx = key[1] - '0' + 9;
-      Wm.change_desktop (this, desk_idx);
+      Xwm.change_desktop (this, desk_idx);
       on_change_desktop (this, desk_idx);
     } else if (STR_EQ ("Return", key)) {
       char *argv[] = {"xterm", "-e", SHELL, NULL};
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
     } else if (STR_EQ ("l", key))
       sys_backlight (this, 100);
 
@@ -353,9 +353,9 @@ private void on_keypress (wm_T *this, int modifier, char *key) {
 
   if (modifier is WIN_SHIFT_KEY) {
     if (STR_EQ ("q", key))
-      Wm.quit (this);
+      Xwm.quit (this);
     else if (STR_EQ ("k", key))
-      Wm.kill_client (this);
+      Xwm.kill_client (this);
 
     return;
   }
@@ -363,13 +363,13 @@ private void on_keypress (wm_T *this, int modifier, char *key) {
   if (modifier is ALT_KEY) {
     if (STR_EQ ("F4", key)) {
       char *argv[] = {TERM, "-name", "HTOP", "-e", "htop", NULL};
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
     } else if (STR_EQ ("F3", key)) {
       char *argv[] = {TERM, "-name", "ALSAMIXER", "-e", "alsamixer", NULL};
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
     } else if (STR_EQ ("F2", key)) {
       char *argv[] = {"chromium", NULL};
-      Wm.spawn (this, argv);
+      Xwm.spawn (this, argv);
     }
 
     return;
@@ -377,13 +377,13 @@ private void on_keypress (wm_T *this, int modifier, char *key) {
 
   if (modifier is WIN_ALT_KEY) {
     if (STR_EQ ("Right", key))
-      Wm.resize.side_way (this, 12);
+      Xwm.resize.side_way (this, 12);
     else if (STR_EQ ("Left", key))
-      Wm.resize.side_way (this, -12);
+      Xwm.resize.side_way (this, -12);
     else if (STR_EQ ("Up", key))
-      Wm.resize.stack (this, -12);
+      Xwm.resize.stack (this, -12);
     else if (STR_EQ ("Down", key))
-      Wm.resize.stack (this, 12);
+      Xwm.resize.stack (this, 12);
     else if (STR_EQ ("m", key))
       sys_to_memory (this);
     else if (STR_EQ ("l", key))
@@ -394,20 +394,20 @@ private void on_keypress (wm_T *this, int modifier, char *key) {
 
   if (modifier is WIN_CONTROL_KEY) {
     if (STR_EQ ("Right", key))
-      Wm.move.side_way (this, 15);
+      Xwm.move.side_way (this, 15);
     else if (STR_EQ ("Left", key))
-      Wm.move.side_way (this, -15);
+      Xwm.move.side_way (this, -15);
     else if (STR_EQ ("Up", key))
-      Wm.move.stack (this, -15);
+      Xwm.move.stack (this, -15);
     else if (STR_EQ ("Down", key))
-      Wm.move.stack (this, 15);
+      Xwm.move.stack (this, 15);
     return;
   }
 }
 
-private void on_startup (wm_T *this) {
+private void on_startup (xwm_T *this) {
   char *argv[] = {TERM, "-e", SHELL, NULL};
-  Wm.spawn (this, argv);
+  Xwm.spawn (this, argv);
 }
 
 private int is_directory (char *dname) {
@@ -416,7 +416,7 @@ private int is_directory (char *dname) {
   return S_ISDIR (st.st_mode);
 }
 
-private void init_backlight_linux (wm_t *this) {
+private void init_backlight_linux (xwm_t *this) {
   char dir[] = "/sys/class/backlight";
 
   ifnot (is_directory (dir)) return;
@@ -464,7 +464,7 @@ private void init_backlight_linux (wm_t *this) {
   this->max_brightness = atoi (s);
 }
 
-private void init_backlight (wm_t *this) {
+private void init_backlight (xwm_t *this) {
   this->backlight_dirlen = 0;
   this->backlight_dir = NULL;
   this->max_brightness = 0;
@@ -474,8 +474,8 @@ private void init_backlight (wm_t *this) {
       init_backlight_linux (this);
 }
 
-private wm_t *init_this (void) {
-  wm_t *this = AllocType (wm);
+private xwm_t *init_this (void) {
+  xwm_t *this = AllocType (xwm);
 
   struct utsname u;
   if (-1 is uname (&u))
@@ -488,9 +488,9 @@ private wm_t *init_this (void) {
   return this;
 }
 
-private void deinit_this (wm_t **thisp) {
+private void deinit_this (xwm_t **thisp) {
   if (NULL is *thisp) return;
-  wm_t *this = *thisp;
+  xwm_t *this = *thisp;
 
   ifnot (NULL is this->sysname)
     free (this->sysname);
@@ -505,68 +505,68 @@ private void deinit_this (wm_t **thisp) {
 int main (int argc, char **argv) {
   (void) argc; (void) argv;
 
-  wm_t *wm = init_this ();
+  xwm_t *xwm = init_this ();
 
-  wm_T *this = __init_wm__();
-  WM = this;
-  this->user_obj = wm;
+  xwm_T *this = __init_xwm__();
+  XWM = this;
+  this->user_obj = xwm;
 
-  Wm.init (this, DESKNUM);
+  Xwm.init (this, DESKNUM);
 
   for (int i = 0; i < 10; i++) {
     char n[2]; n[0] = i + '0'; n[1] = '\0';
-    Wm.set.key (this, n, Mod4Mask);
+    Xwm.set.key (this, n, Mod4Mask);
   }
 
   for (int i = 1; i < 9; i++) {
     char n[3]; n[0] = 'F'; n[1] = i + '0'; n[2] = '\0';
-    Wm.set.key (this, n, Mod4Mask);
+    Xwm.set.key (this, n, Mod4Mask);
   }
 
-  Wm.set.key (this, "c",      Mod4Mask);
-  Wm.set.key (this, "q",      Mod4Mask);
-  Wm.set.key (this, "Tab",    Mod4Mask);
-  Wm.set.key (this, "Left",   Mod4Mask);
-  Wm.set.key (this, "Right",  Mod4Mask);
-  Wm.set.key (this, "grave",  Mod4Mask);
-  Wm.set.key (this, "Return", Mod4Mask);
-  Wm.set.key (this, "l",      Mod4Mask);
+  Xwm.set.key (this, "c",      Mod4Mask);
+  Xwm.set.key (this, "q",      Mod4Mask);
+  Xwm.set.key (this, "Tab",    Mod4Mask);
+  Xwm.set.key (this, "Left",   Mod4Mask);
+  Xwm.set.key (this, "Right",  Mod4Mask);
+  Xwm.set.key (this, "grave",  Mod4Mask);
+  Xwm.set.key (this, "Return", Mod4Mask);
+  Xwm.set.key (this, "l",      Mod4Mask);
 
-  Wm.set.key (this, "q",      Mod4Mask|ShiftMask);
-  Wm.set.key (this, "k",      Mod4Mask|ShiftMask);
+  Xwm.set.key (this, "q",      Mod4Mask|ShiftMask);
+  Xwm.set.key (this, "k",      Mod4Mask|ShiftMask);
 
-  Wm.set.key (this, "F3",     Mod1Mask);
-  Wm.set.key (this, "F4",     Mod1Mask);
-  Wm.set.key (this, "F2",     Mod1Mask);
+  Xwm.set.key (this, "F3",     Mod1Mask);
+  Xwm.set.key (this, "F4",     Mod1Mask);
+  Xwm.set.key (this, "F2",     Mod1Mask);
 
-  Wm.set.key (this, "Right",  Mod4Mask|Mod1Mask);
-  Wm.set.key (this, "Left",   Mod4Mask|Mod1Mask);
-  Wm.set.key (this, "Up",     Mod4Mask|Mod1Mask);
-  Wm.set.key (this, "Down",   Mod4Mask|Mod1Mask);
-  Wm.set.key (this, "m",      Mod4Mask|Mod1Mask);
-  Wm.set.key (this, "l",      Mod4Mask|Mod1Mask);
+  Xwm.set.key (this, "Right",  Mod4Mask|Mod1Mask);
+  Xwm.set.key (this, "Left",   Mod4Mask|Mod1Mask);
+  Xwm.set.key (this, "Up",     Mod4Mask|Mod1Mask);
+  Xwm.set.key (this, "Down",   Mod4Mask|Mod1Mask);
+  Xwm.set.key (this, "m",      Mod4Mask|Mod1Mask);
+  Xwm.set.key (this, "l",      Mod4Mask|Mod1Mask);
 
-  Wm.set.key (this, "Right",  Mod4Mask|ControlMask);
-  Wm.set.key (this, "Left",   Mod4Mask|ControlMask);
-  Wm.set.key (this, "Up",     Mod4Mask|ControlMask);
-  Wm.set.key (this, "Down",   Mod4Mask|ControlMask);
+  Xwm.set.key (this, "Right",  Mod4Mask|ControlMask);
+  Xwm.set.key (this, "Left",   Mod4Mask|ControlMask);
+  Xwm.set.key (this, "Up",     Mod4Mask|ControlMask);
+  Xwm.set.key (this, "Down",   Mod4Mask|ControlMask);
 
-  Wm.set.onmap (this, "HTOP",      13, FOLLOW);
-  Wm.set.onmap (this, "ALSAMIXER", 13, FOLLOW);
-  Wm.set.onmap (this, "Chromium",  12, FOLLOW);
+  Xwm.set.onmap (this, "HTOP",      13, FOLLOW);
+  Xwm.set.onmap (this, "ALSAMIXER", 13, FOLLOW);
+  Xwm.set.onmap (this, "Chromium",  12, FOLLOW);
 
-//  Wm.set.positional (this, "InputWindow", 1, 1, 1000, 50);
+//  Xwm.set.positional (this, "InputWindow", 1, 1, 1000, 50);
 
-  Wm.set.mode (this, 14, STACK_MODE);
+  Xwm.set.mode (this, 14, STACK_MODE);
 
-  Wm.set.on_startup_cb (this, on_startup);
-  Wm.set.on_keypress_cb (this, on_keypress);
+  Xwm.set.on_startup_cb (this, on_startup);
+  Xwm.set.on_keypress_cb (this, on_keypress);
 
-  Wm.startx (this);
+  Xwm.startx (this);
 
-  __deinit_wm__ (&this);
+  __deinit_xwm__ (&this);
 
-  deinit_this (&wm);
+  deinit_this (&xwm);
 
   return 0;
 }

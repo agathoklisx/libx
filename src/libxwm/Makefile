@@ -1,4 +1,4 @@
-THIS_LIBNAME := wm
+THIS_LIBNAME := xwm
 
 API := 0
 REV := 1
@@ -73,7 +73,7 @@ $(SYSINCDIR)/$(THIS_HEADER):
 	@$(CP) -v $(THIS_HEADER) $(SYSINCDIR)
 
 #----------------------------------------------------------#
-APPNAME := wm
+APPNAME := $(THIS_LIBNAME)
 
 THIS_APPSRC  := $(APPNAME).c
 THIS_APPVERS := $(API)$(REV)
@@ -82,7 +82,7 @@ APPSHARED    := $(APPNAME)-$(THIS_APPVERS)_shared
 SYSAPPSHARED := $(SYSBINDIR)/$(APPSHARED)
 
 #----------------------------------------------------------#
-APPFLAGS := -I$(SYSINCDIR) -L$(SYSLIBDIR) $(FLAGS) -lwm
+APPFLAGS := -I$(SYSINCDIR) -L$(SYSLIBDIR) $(FLAGS) -l$(THIS_LIBNAME)
 
 app-all: app-shared
 

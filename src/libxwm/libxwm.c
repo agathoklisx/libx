@@ -31,23 +31,23 @@
 #include <errno.h>
 
 #include "c.h"
-#include <libwm.h>
+#include <libxwm.h>
 
 #define CLEANMASK(mask) (mask & ~($my(numlockmask) | LockMask))
 
-private void wm_maprequest (XEvent *);
-private void wm_keypress (XEvent *);
-private void wm_unmapnotify (XEvent *);
-private void wm_configurerequest (XEvent *);
-private void wm_destroynotify (XEvent *);
-private void wm_unmapnotify (XEvent *);
+private void xwm_maprequest (XEvent *);
+private void xwm_keypress (XEvent *);
+private void xwm_unmapnotify (XEvent *);
+private void xwm_configurerequest (XEvent *);
+private void xwm_destroynotify (XEvent *);
+private void xwm_unmapnotify (XEvent *);
 
 static void (*events[LASTEvent])(XEvent *e) = {
-  [KeyPress] = wm_keypress,
-  [MapRequest] = wm_maprequest,
-  [UnmapNotify] = wm_unmapnotify,
-  [DestroyNotify] = wm_destroynotify,
-  [ConfigureRequest] = wm_configurerequest
+  [KeyPress] = xwm_keypress,
+  [MapRequest] = xwm_maprequest,
+  [UnmapNotify] = xwm_unmapnotify,
+  [DestroyNotify] = xwm_destroynotify,
+  [ConfigureRequest] = xwm_configurerequest
 };
 
 NewType (client,
@@ -96,8 +96,8 @@ NewType (positional,
     height;
 );
 
-NewType (wm_key,
-  wm_key_t *next;
+NewType (xwm_key,
+  xwm_key_t *next;
   int modifier;
   KeySym keysym;
 );
@@ -115,16 +115,16 @@ NewType (font,
   int descent;
 );
 
-NewProp (wm,
+NewProp (xwm,
   Window root;
   Display *dpy;
 
   desktop_t *desktops;
-  wm_key_t  *keys;
+  xwm_key_t  *keys;
   OnMap_t   *onmap;
   positional_t *positional;
 
-  Class (wm) *__Me__;
+  Class (xwm) *__Me__;
 
   client_t
     *head,
@@ -133,7 +133,7 @@ NewProp (wm,
 
   Atom
     *protocols,
-    wm_delete_window,
+    xwm_delete_window,
     protos;
 
   int
@@ -160,7 +160,7 @@ NewProp (wm,
   OnKeypress_cb OnKeypress;
 );
 
-static Class (wm) *WM;
+static Class (xwm) *XWM;
 
 int (*xerrorxlib)(Display *, XErrorEvent *);
 
@@ -180,14 +180,14 @@ private int xerror (Display *dpy, XErrorEvent *ee) {
   return xerrorxlib (dpy, ee);
 }
 
-private void wm_keypress (XEvent *e) {
-  wm_T *this = WM;
+private void xwm_keypress (XEvent *e) {
+  xwm_T *this = XWM;
   KeySym keysym;
   XKeyEvent *ev = &e->xkey;
 
   keysym = XkbKeycodeToKeysym ($my(dpy), (KeyCode)ev->keycode, 0, 0);
 
-  wm_key_t *k;
+  xwm_key_t *k;
 
   for (k = $my(keys); k; k = k->next)
     if (keysym is k->keysym and CLEANMASK(k->modifier) is (int) CLEANMASK(ev->state)) {
@@ -198,8 +198,8 @@ private void wm_keypress (XEvent *e) {
    }
 }
 
-private void wm_configurerequest (XEvent *e) {
-  wm_T *this = WM;
+private void xwm_configurerequest (XEvent *e) {
+  xwm_T *this = XWM;
   XConfigureRequestEvent *ev = &e->xconfigurerequest;
   XWindowChanges wc;
 
@@ -214,8 +214,8 @@ private void wm_configurerequest (XEvent *e) {
   XSync ($my(dpy), False);
 }
 
-private void wm_maprequest (XEvent *e) {
-  wm_T *this = WM;
+private void xwm_maprequest (XEvent *e) {
+  xwm_T *this = XWM;
   XMapRequestEvent *ev = &e->xmaprequest;
 
   XGetWindowAttributes ($my(dpy), ev->window, &$my(attr));
@@ -305,8 +305,8 @@ private void wm_maprequest (XEvent *e) {
   self(update_current);
 }
 
-private void wm_destroynotify (XEvent *e) {
-  wm_T *this = WM;
+private void xwm_destroynotify (XEvent *e) {
+  xwm_T *this = XWM;
   int tmp = $my(current_desktop);
   client_t *c;
   XDestroyWindowEvent *ev = &e->xdestroywindow;
@@ -335,8 +335,8 @@ private void wm_destroynotify (XEvent *e) {
   self(select_desktop, tmp);
 }
 
-private void wm_unmapnotify (XEvent *e) {
-  wm_T *this = WM;
+private void xwm_unmapnotify (XEvent *e) {
+  xwm_T *this = XWM;
   XUnmapEvent *ev = &e->xunmap;
   client_t *c;
 
@@ -348,7 +348,7 @@ private void wm_unmapnotify (XEvent *e) {
       }
 }
 
-private void wm_input_window (wm_T *this, char *header, Input_cb cb) {
+private void xwm_input_window (xwm_T *this, char *header, Input_cb cb) {
   int cur_desktop = self(get.current_desktop);
   self(change_desktop, $my(desknum) - 1);
   self(get.font);
@@ -437,7 +437,7 @@ theend:
   self(change_desktop, cur_desktop);
 }
 
-private char **wm_get_desk_class_names (wm_T *this, int desk) {
+private char **xwm_get_desk_class_names (xwm_T *this, int desk) {
   if (desk < 0 or desk >= $my(desknum) - 1) return NULL;
 
   ifnot ($my(desktops)[desk].numwins)
@@ -468,7 +468,7 @@ private char **wm_get_desk_class_names (wm_T *this, int desk) {
   return classes;
 }
 
-private void wm_get_font (wm_T *this) {
+private void xwm_get_font (xwm_T *this) {
   if (NULL is $my(dpy)) return;
 
   ifnot (NULL is $my(font)) return;
@@ -514,36 +514,36 @@ private void wm_get_font (wm_T *this) {
   $my(font)->height = $my(font)->ascent + $my(font)->descent;
 }
 
-private unsigned long wm_get_color (wm_T *this, const char *color) {
+private unsigned long xwm_get_color (xwm_T *this, const char *color) {
   XColor c;
   Colormap map = DefaultColormap ($my(dpy), $my(screen));
 
   ifnot (XAllocNamedColor ($my(dpy), map, color, &c, &c))
-    fprintf (stderr, "WM: Error parsing color\n");
+    fprintf (stderr, "XWM: Error parsing color\n");
 
   return c.pixel;
 }
 
-private int wm_get_current_desktop (wm_T *this) {
+private int xwm_get_current_desktop (xwm_T *this) {
   return $my(current_desktop);
 }
 
-private int wm_get_desk_numwin (wm_T *this, int idx) {
+private int xwm_get_desk_numwin (xwm_T *this, int idx) {
   if (0 > idx or idx >= $my(desknum)) return 0;
   return $my(desktops)[idx].numwins;
 }
 
-private int wm_get_desknum (wm_T *this) {
+private int xwm_get_desknum (xwm_T *this) {
   return $my(desknum) - 1;
 }
 
-private int wm_get_previous_desktop (wm_T *this) {
+private int xwm_get_previous_desktop (xwm_T *this) {
   return $my(previous_desktop);
 }
 
-private void wm_sigchld_handler (int);
-private void wm_sigchld_handler (int sig) {
-  if (signal (sig, wm_sigchld_handler) is SIG_ERR) {
+private void xwm_sigchld_handler (int);
+private void xwm_sigchld_handler (int sig) {
+  if (signal (sig, xwm_sigchld_handler) is SIG_ERR) {
     fprintf (stderr, "Can't install SIGCHLD handler\n");
     exit (1);
   }
@@ -551,7 +551,7 @@ private void wm_sigchld_handler (int sig) {
   while (0 < waitpid (-1, NULL, WNOHANG));
 }
 
-private void wm_change_desktop (wm_T *this, int desk) {
+private void xwm_change_desktop (xwm_T *this, int desk) {
   if (desk is $my(current_desktop)) return;
   int tmp = $my(current_desktop);
 
@@ -587,12 +587,12 @@ private void wm_change_desktop (wm_T *this, int desk) {
   self(update_current);
 }
 
-private void wm_follow_client_to_desktop  (wm_T *this, int desk) {
+private void xwm_follow_client_to_desktop  (xwm_T *this, int desk) {
   self(client_to_desktop, desk);
   self(change_desktop, desk);
 }
 
-private void wm_client_to_desktop  (wm_T *this, int desk) {
+private void xwm_client_to_desktop  (xwm_T *this, int desk) {
   if (desk is $my(current_desktop) or $my(current) is NULL)
     return;
 
@@ -607,7 +607,7 @@ private void wm_client_to_desktop  (wm_T *this, int desk) {
   self(select_desktop, tmp2);
 }
 
-private void wm_change_mode (wm_T *this, int mode) {
+private void xwm_change_mode (xwm_T *this, int mode) {
   if ($my(mode) is mode) return;
 
   client_t *c;
@@ -631,7 +631,7 @@ private void wm_change_mode (wm_T *this, int mode) {
   self(update_current);
 }
 
-private void wm_save_desktop (wm_T *this, int i) {
+private void xwm_save_desktop (xwm_T *this, int i) {
   $my(desktops)[i].numwins = $my(numwins);
   $my(desktops)[i].mode = $my(mode);
   $my(desktops)[i].growth = $my(growth);
@@ -640,7 +640,7 @@ private void wm_save_desktop (wm_T *this, int i) {
   $my(desktops)[i].transient = $my(transient);
 }
 
-private void wm_next_win (wm_T *this) {
+private void xwm_next_win (xwm_T *this) {
   if ($my(numwins) < 2) return;
 
   $my(current) = ($my(current)->next is NULL) ? $my(head) : $my(current)->next;
@@ -651,7 +651,7 @@ private void wm_next_win (wm_T *this) {
   self(update_current);
 }
 
-private void wm_prev_win (wm_T *this) {
+private void xwm_prev_win (xwm_T *this) {
   if ($my(numwins) < 2) return;
 
   client_t *c;
@@ -669,7 +669,7 @@ private void wm_prev_win (wm_T *this) {
   self(update_current);
 }
 
-private void wm_resize_side_way (wm_T *this, int inc) {
+private void xwm_resize_side_way (xwm_T *this, int inc) {
   if ($my(mode) is STACK_MODE and $my(current) isnot NULL) {
     $my(current)->width += inc;
     XMoveResizeWindow ($my(dpy), $my(current)->win, $my(current)->x, $my(current)->y,
@@ -677,7 +677,7 @@ private void wm_resize_side_way (wm_T *this, int inc) {
   }
 }
 
-private void wm_resize_stack (wm_T *this, int inc) {
+private void xwm_resize_stack (xwm_T *this, int inc) {
   if ($my(mode) is STACK_MODE and $my(current) isnot NULL) {
     $my(current)->height += inc;
     XMoveResizeWindow ($my(dpy), $my(current)->win, $my(current)->x, $my(current)->y,
@@ -685,21 +685,21 @@ private void wm_resize_stack (wm_T *this, int inc) {
   }
 }
 
-private void wm_move_stack (wm_T *this, int inc) {
+private void xwm_move_stack (xwm_T *this, int inc) {
   if ($my(mode) is STACK_MODE and $my(current) isnot NULL) {
     $my(current)->y += inc;
     XMoveResizeWindow ($my(dpy), $my(current)->win, $my(current)->x, $my(current)->y, $my(current)->width, $my(current)->height);
   }
 }
 
-private void wm_move_side_way (wm_T *this, int inc) {
+private void xwm_move_side_way (xwm_T *this, int inc) {
   if ($my(mode) is STACK_MODE and $my(current) isnot NULL) {
     $my(current)->x += inc;
     XMoveResizeWindow ($my(dpy), $my(current)->win, $my(current)->x, $my(current)->y, $my(current)->width, $my(current)->height);
   }
 }
 
-private void wm_add_window (wm_T *this, Window w, int tw, client_t *cl) {
+private void xwm_add_window (xwm_T *this, Window w, int tw, client_t *cl) {
   client_t
     *c,
     *t,
@@ -778,7 +778,7 @@ private void wm_add_window (wm_T *this, Window w, int tw, client_t *cl) {
   self(save_desktop, $my(current_desktop));
 }
 
-private void wm_update_current (wm_T *this) {
+private void xwm_update_current (xwm_T *this) {
   if ($my(head) is NULL) return;
 
   int border = (($my(head)->next is NULL and $my(mode) is FULLSCREEN_MODE) or
@@ -816,7 +816,7 @@ private void wm_update_current (wm_T *this) {
   XSync ($my(dpy), False);
 }
 
-private void wm_remove_window (wm_T *this, Window w, int dr, int tw) {
+private void xwm_remove_window (xwm_T *this, Window w, int dr, int tw) {
   client_t
     *c,
     *t,
@@ -883,7 +883,7 @@ private void wm_remove_window (wm_T *this, Window w, int dr, int tw) {
 
 }
 
-private void wm_tile (wm_T *this) {
+private void xwm_tile (xwm_T *this) {
   if ($my(head) is NULL) return;
 
   client_t *c;
@@ -905,25 +905,25 @@ private void wm_tile (wm_T *this) {
   }
 }
 
-private void wm_kill_client (wm_T *this) {
+private void xwm_kill_client (xwm_T *this) {
   if ($my(head) is NULL) return;
 
   self(kill_client_now, $my(current)->win);
   self(remove_window, $my(current)->win, 0, 0);
 }
 
-private void wm_kill_client_now (wm_T *this, Window w) {
+private void xwm_kill_client_now (xwm_T *this, Window w) {
   int n, i;
   XEvent ev;
 
   if (XGetWMProtocols ($my(dpy), w, &$my(protocols), &n) isnot 0) {
     for (i = n; i >= 0; --i)
-      if ($my(protocols)[i] is $my(wm_delete_window)) {
+      if ($my(protocols)[i] is $my(xwm_delete_window)) {
         ev.type = ClientMessage;
         ev.xclient.window = w;
         ev.xclient.message_type = $my(protos);
         ev.xclient.format = 32;
-        ev.xclient.data.l[0] = $my(wm_delete_window);
+        ev.xclient.data.l[0] = $my(xwm_delete_window);
         ev.xclient.data.l[1] = CurrentTime;
         XSendEvent ($my(dpy), w, False, NoEventMask, &ev);
       }
@@ -933,7 +933,7 @@ private void wm_kill_client_now (wm_T *this, Window w) {
   XFree ($my(protocols));
 }
 
-private void wm_quit (wm_T *this) {
+private void xwm_quit (xwm_T *this) {
   client_t *c;
 
   for (int i = 0; i < $my(desknum); ++i) {
@@ -953,7 +953,7 @@ private void wm_quit (wm_T *this) {
   $my(bool_quit) = 1;
 }
 
-private void wm_spawn (wm_T *this, char **command) {
+private void xwm_spawn (xwm_T *this, char **command) {
   if (fork () == 0) {
     if (fork () == 0) {
       if ($my(dpy))
@@ -968,7 +968,7 @@ private void wm_spawn (wm_T *this, char **command) {
   }
 }
 
-private void wm_select_desktop (wm_T *this, int i) {
+private void xwm_select_desktop (xwm_T *this, int i) {
   $my(numwins) = $my(desktops)[i].numwins;
   $my(mode) = $my(desktops)[i].mode;
   $my(growth) = $my(desktops)[i].growth;
@@ -978,7 +978,7 @@ private void wm_select_desktop (wm_T *this, int i) {
   $my(current_desktop) = i;
 }
 
-private void wm_grabkeys (wm_T *this) {
+private void xwm_grabkeys (xwm_T *this) {
   $my(numlockmask) = 0;
   XModifierKeymap *modmap = XGetModifierMapping ($my(dpy));
 
@@ -994,7 +994,7 @@ private void wm_grabkeys (wm_T *this) {
   XUngrabKey ($my(dpy), AnyKey, AnyModifier, $my(root));
 
   KeyCode code;
-  wm_key_t *k;
+  xwm_key_t *k;
 
   for (k = $my(keys); k; k = k->next) {
     code = XKeysymToKeycode ($my(dpy), k->keysym);
@@ -1005,7 +1005,7 @@ private void wm_grabkeys (wm_T *this) {
     }
 }
 
-private void wm_event_loop (wm_T *this) {
+private void xwm_event_loop (xwm_T *this) {
   XEvent ev;
 
   while (0 is $my(bool_quit) and 0 is XNextEvent ($my(dpy), &ev))
@@ -1013,8 +1013,8 @@ private void wm_event_loop (wm_T *this) {
       events[ev.type](&ev);
 }
 
-private int wm_startx (wm_T *this) {
-  wm_sigchld_handler (SIGCHLD);
+private int xwm_startx (xwm_T *this) {
+  xwm_sigchld_handler (SIGCHLD);
 
   if (NULL is ($my(dpy) = XOpenDisplay (NULL))) {
     fprintf (stderr, "Cannot open display\n");
@@ -1035,7 +1035,7 @@ private int wm_startx (wm_T *this) {
   self(grabkeys);
   self(select_desktop, 0);
 
-  $my(wm_delete_window) = XInternAtom ($my(dpy), "WM_DELETE_WINDOW", False);
+  $my(xwm_delete_window) = XInternAtom ($my(dpy), "WM_DELETE_WINDOW", False);
   $my(protos) = XInternAtom ($my(dpy), "WM_PROTOCOLS", False);
   XSelectInput ($my(dpy), $my(root), SubstructureNotifyMask|SubstructureRedirectMask);
 
@@ -1044,22 +1044,22 @@ private int wm_startx (wm_T *this) {
   ifnot (NULL is $my(OnStartup))
     $my(OnStartup) (this);
 
-  wm_event_loop (this);
+  xwm_event_loop (this);
 
   XCloseDisplay ($my(dpy));
 
   return OK;
 }
 
-private void wm_set_on_startup_cb (wm_T *this, OnStartup_cb cb) {
+private void xwm_set_on_startup_cb (xwm_T *this, OnStartup_cb cb) {
   $my(OnStartup) = cb;
 }
 
-private void wm_set_on_keypress_cb (wm_T *this, OnKeypress_cb cb) {
+private void xwm_set_on_keypress_cb (xwm_T *this, OnKeypress_cb cb) {
   $my(OnKeypress) = cb;
 }
 
-private void wm_set_onmap (wm_T *this, char *class, int desk, int follow) {
+private void xwm_set_onmap (xwm_T *this, char *class, int desk, int follow) {
   OnMap_t *s = AllocType (OnMap);
   s->class = strdup (class);
   s->desk = desk;
@@ -1068,7 +1068,7 @@ private void wm_set_onmap (wm_T *this, char *class, int desk, int follow) {
   $my(onmap) = s;
 }
 
-private void wm_set_positional (wm_T *this, char *class, int x, int y,
+private void xwm_set_positional (xwm_T *this, char *class, int x, int y,
                                                int width, int height) {
   positional_t *s = AllocType (positional);
   s->class = strdup (class);
@@ -1080,21 +1080,21 @@ private void wm_set_positional (wm_T *this, char *class, int x, int y,
   $my(positional) = s;
 }
 
-private void wm_set_mode (wm_T *this, int desk, int mode) {
+private void xwm_set_mode (xwm_T *this, int desk, int mode) {
   desk--;
   if (desk < 0 or desk >= $my(desknum) - 1) return;
   $my(desktops)[desk].mode = mode;
 }
 
-private void wm_set_key (wm_T *this, char *keysym, int modifier) {
-  wm_key_t *s = AllocType (wm_key);
+private void xwm_set_key (xwm_T *this, char *keysym, int modifier) {
+  xwm_key_t *s = AllocType (xwm_key);
   s->keysym = XStringToKeysym (keysym);
   s->modifier = modifier;
   s->next = $my(keys);
   $my(keys) = s;
 }
 
-private void wm_set_desktops (wm_T *this, int num) {
+private void xwm_set_desktops (xwm_T *this, int num) {
   $my(desknum) = num + 1;
 
   self(release.desktops);
@@ -1111,22 +1111,22 @@ private void wm_set_desktops (wm_T *this, int num) {
   }
 }
 
-private void wm_release_font (wm_T *this) {
+private void xwm_release_font (xwm_T *this) {
   if (NULL is $my(font)) return;
   free ($my(font));
 }
 
-private void wm_release_keys (wm_T *this) {
+private void xwm_release_keys (xwm_T *this) {
   if (NULL is $my(keys)) return;
-  wm_key_t *s = $my(keys);
+  xwm_key_t *s = $my(keys);
   while (s) {
-    wm_key_t *next = s->next;
+    xwm_key_t *next = s->next;
     free (s);
     s = next;
   }
 }
 
-private void wm_release_onmap (wm_T *this) {
+private void xwm_release_onmap (xwm_T *this) {
   if (NULL is $my(onmap)) return;
 
   OnMap_t *s = $my(onmap);
@@ -1138,7 +1138,7 @@ private void wm_release_onmap (wm_T *this) {
   }
 }
 
-private void wm_release_positional (wm_T *this) {
+private void xwm_release_positional (xwm_T *this) {
   if (NULL is $my(positional)) return;
   positional_t *s = $my(positional);
   while (s) {
@@ -1149,7 +1149,7 @@ private void wm_release_positional (wm_T *this) {
   }
 }
 
-private void wm_release_desktops (wm_T *this) {
+private void xwm_release_desktops (xwm_T *this) {
   if (NULL is $my(desktops)) return;
   for (int i = 0; i < $my(desknum); i++) {
     client_t *c = $my(desktops)[i].head;
@@ -1164,73 +1164,73 @@ private void wm_release_desktops (wm_T *this) {
   $my(desktops) = NULL;
 }
 
-private void wm_init (wm_T *this, int desknum) {
+private void xwm_init (xwm_T *this, int desknum) {
   XSetErrorHandler (xerror);
   self(set.desktops, desknum);
 }
 
-public Class (wm) *__init_wm__ (void) {
-  Class (wm) *this = AllocClass (wm);
+public Class (xwm) *__init_xwm__ (void) {
+  Class (xwm) *this = AllocClass (xwm);
 
-  *this = ClassInit (wm,
+  *this = ClassInit (xwm,
     .prop = this->prop,
     .user_obj = NULL,
     .user_string = NULL,
     .user_int = -1,
-    .self = SelfInit (wm,
-      .init = wm_init,
-      .quit = wm_quit,
-      .tile = wm_tile,
-      .spawn = wm_spawn,
+    .self = SelfInit (xwm,
+      .init = xwm_init,
+      .quit = xwm_quit,
+      .tile = xwm_tile,
+      .spawn = xwm_spawn,
       .xfree = XFree,
-      .startx = wm_startx,
-      .grabkeys = wm_grabkeys,
-      .prev_win = wm_prev_win,
-      .next_win = wm_next_win,
-      .add_window = wm_add_window,
-      .kill_client = wm_kill_client,
-      .change_mode = wm_change_mode,
-      .save_desktop = wm_save_desktop,
-      .input_window = wm_input_window,
-      .remove_window = wm_remove_window,
-      .change_desktop = wm_change_desktop,
-      .update_current = wm_update_current,
-      .select_desktop = wm_select_desktop,
-      .kill_client_now = wm_kill_client_now,
-      .client_to_desktop = wm_client_to_desktop,
-      .follow_client_to_desktop = wm_follow_client_to_desktop,
-      .get = SubSelfInit (wm, get,
-        .font = wm_get_font,
-        .color = wm_get_color,
-        .desknum = wm_get_desknum,
-        .desk_numwin = wm_get_desk_numwin,
-        .current_desktop = wm_get_current_desktop,
-        .previous_desktop = wm_get_previous_desktop,
-        .desk_class_names = wm_get_desk_class_names
+      .startx = xwm_startx,
+      .grabkeys = xwm_grabkeys,
+      .prev_win = xwm_prev_win,
+      .next_win = xwm_next_win,
+      .add_window = xwm_add_window,
+      .kill_client = xwm_kill_client,
+      .change_mode = xwm_change_mode,
+      .save_desktop = xwm_save_desktop,
+      .input_window = xwm_input_window,
+      .remove_window = xwm_remove_window,
+      .change_desktop = xwm_change_desktop,
+      .update_current = xwm_update_current,
+      .select_desktop = xwm_select_desktop,
+      .kill_client_now = xwm_kill_client_now,
+      .client_to_desktop = xwm_client_to_desktop,
+      .follow_client_to_desktop = xwm_follow_client_to_desktop,
+      .get = SubSelfInit (xwm, get,
+        .font = xwm_get_font,
+        .color = xwm_get_color,
+        .desknum = xwm_get_desknum,
+        .desk_numwin = xwm_get_desk_numwin,
+        .current_desktop = xwm_get_current_desktop,
+        .previous_desktop = xwm_get_previous_desktop,
+        .desk_class_names = xwm_get_desk_class_names
       ),
-      .set = SubSelfInit (wm, set,
-        .key = wm_set_key,
-        .mode = wm_set_mode,
-        .onmap = wm_set_onmap,
-        .desktops = wm_set_desktops,
-        .positional = wm_set_positional,
-        .on_startup_cb = wm_set_on_startup_cb,
-        .on_keypress_cb = wm_set_on_keypress_cb
+      .set = SubSelfInit (xwm, set,
+        .key = xwm_set_key,
+        .mode = xwm_set_mode,
+        .onmap = xwm_set_onmap,
+        .desktops = xwm_set_desktops,
+        .positional = xwm_set_positional,
+        .on_startup_cb = xwm_set_on_startup_cb,
+        .on_keypress_cb = xwm_set_on_keypress_cb
       ),
-      .move = SubSelfInit (wm, move,
-        .stack = wm_move_stack,
-        .side_way = wm_move_side_way
+      .move = SubSelfInit (xwm, move,
+        .stack = xwm_move_stack,
+        .side_way = xwm_move_side_way
       ),
-      .resize = SubSelfInit (wm, resize,
-        .stack = wm_resize_stack,
-        .side_way = wm_resize_side_way
+      .resize = SubSelfInit (xwm, resize,
+        .stack = xwm_resize_stack,
+        .side_way = xwm_resize_side_way
       ),
-      .release = SubSelfInit (wm, release,
-        .font = wm_release_font,
-        .keys = wm_release_keys,
-        .onmap = wm_release_onmap,
-        .desktops = wm_release_desktops,
-        .positional = wm_release_positional
+      .release = SubSelfInit (xwm, release,
+        .font = xwm_release_font,
+        .keys = xwm_release_keys,
+        .onmap = xwm_release_onmap,
+        .desktops = xwm_release_desktops,
+        .positional = xwm_release_positional
       )
     )
   );
@@ -1243,13 +1243,13 @@ public Class (wm) *__init_wm__ (void) {
   $my(OnKeypress) = NULL;
 
   $my( __Me__) = this;
-  WM = this;
+  XWM = this;
   return this;
 }
 
-public void __deinit_wm__ (Class (wm) **thisp) {
+public void __deinit_xwm__ (Class (xwm) **thisp) {
   if (NULL is *thisp) return;
-  Class (wm) *this = *thisp;
+  Class (xwm) *this = *thisp;
 
   self(release.font);
   self(release.keys);

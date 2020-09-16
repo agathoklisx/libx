@@ -4,7 +4,7 @@ Usage:
 ```sh
   make
 
-  # This builds and installs, the libwm library, the wm executable and the required
+  # This builds and installs, the libxwm library, the xwm executable and the required
   # header.
   # The default installed hierarchy (lib,include,bin), is the sys directory one level
   # lower to the cloned distribution. To change that, use the SYSDIR variable when
@@ -18,10 +18,10 @@ Testing with valgrind for memory leaks, and though there are many reports that a
 coming from the X library, at the end reports that all the allocated resources has
 been deallocated properly.
 
-This library exposes a wm_T * structure, which holds all the required information,
+This library exposes a xwm_T * structure, which holds all the required information,
 and it can be initialized with:
 
-  wm_T *this = __init_wm__ ();
+  xwm_T *this = __init_xwm__ ();
 
 It implements a fullscreen and a stacking mode. The original source had a couple
 modes more, but since they have never being used, that code has been removed with
@@ -39,7 +39,7 @@ focus.
 All the operations are controlled with the keyboard. There is no code to handle
 mouse events, but the original code includes this functionality.
 
-The wm.c unit, it serves as an example using the library from C.
+The xwm.c unit, it serves as an example using the library from C.
 
 It reserves 18 desktops/workspaces.
 
@@ -56,7 +56,7 @@ the library doesn't sets anything by its own.
 It can also associate a client with a desktop, by using the class name.
 
 But the function names and the methods of the structure, describe the usage. Also
-the code at the wm.c unit is self explainable. Start from the main function and
+the code at the xwm.c unit is self explainable. Start from the main function and
 walk to the top.
 
 Thanks:
